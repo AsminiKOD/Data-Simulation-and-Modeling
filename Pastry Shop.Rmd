@@ -1,0 +1,41 @@
+---
+title: "Pastry Shop"
+author: "Vinethma"
+date: "2025-03-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(simmer)
+library(simmer.plot)
+library(gridExtra)
+```
+
+```{r}
+set.seed(100)
+env <- simmer("pastry shop")
+
+customer <- trajectory("customer") %>%
+  seize("employee",1)%>%
+  timeout(function() runif(1,1,5))%>%
+  release("employee",1)
+
+env%>%
+  add_resource("employee",5)%>%
+  add_generator("customer",customer,function() rexp(1, 0.2))
+
+env%>%
+  run(until = 120)
+```
+```{r}
+resource_usage <- plot(get_mon_resources(env),
+                       metric = "usage",items = "server",step = T )
+waiting_time <- plot(get_mon_arrivals(env),metric = "waiting_time")
+
+grid.arrange(resource_usage,waiting_time, ncol=2)
+```
