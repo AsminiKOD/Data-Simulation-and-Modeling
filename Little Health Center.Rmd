@@ -1,0 +1,52 @@
+---
+title: "Little Health Center"
+author: "Vinethma Kodithuwakku"
+date: "2025-03-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(simmer)
+library(simmer.plot)
+library(gridExtra)
+```
+
+```{r}
+set.seed(200)
+env<- simmer("Little Health Center")
+
+patient <- trajectory("patient")%>%
+  seize("nurse",1)%>%
+  timeout(function() rnorm(1, mean = 15, sd=1))%>%
+  release("nurse",1)%>%
+
+  seize("doctor",1)%>%
+  timeout(function() rnorm(1, mean = 20, sd=1))%>%
+  release("doctor",1)%>%
+
+  seize("adminstrator",1)%>%
+  timeout(function() rnorm(1, mean = 5, sd=1))%>%
+  release("adminstrator",1)
+
+env%>%
+  add_resource("nurse",1)%>%
+  add_resource("doctor",2)%>%
+  add_resource("adminstrator",1)%>%
+  
+  add_generator("patient",patient, function() rnorm(1,10,2)) #varience = sd^2
+
+env%>%
+  run(until=240)
+```
+
+```{r}
+p1 = plot(get_mon_resources(env),matric = "utilization")
+p2 = plot(get_mon_arrivals(env),matric = "flow_time")
+
+grid.arrange(p1,p2,nrow =2)
+```
