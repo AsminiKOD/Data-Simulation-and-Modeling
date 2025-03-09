@@ -1,0 +1,55 @@
+---
+title: "Hotel Simulation"
+author: "Vinethma Kodithuwakku"
+date: "2025-03-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(simmer)
+library(simmer.plot)
+library(gridExtra)
+```
+
+```{r}
+set.seed(150)
+env <- simmer("Hotel")
+
+customer <- trajectory("customer")%>%
+  seize("receptionist",1)%>%
+  timeout(function() runif(1,1,5))%>%
+  release("receptionist",1)%>%
+  
+  set_attribute("waiter_count",sample(1:2, 1))%>%
+  seize("waiter",function() get_attribute(env,"waiter_count"))%>%
+  timeout(function() runif(1,1,30))%>%
+  release("waiter",function() get_attribute(env,"waiter_count"))%>%
+  
+  set_attribute("chef_count",sample(1:2, 1))%>%
+  seize("chef", function() get_attribute(env,"chef_count"))%>%
+  timeout(function() runif(1,1,15))%>%
+  release("chef",function() get_attribute(env,"chef_count"))
+
+env%>%
+  add_resource("receptionist",5)%>%
+  add_resource("waiter",30)%>%
+  add_resource("chef",20)%>%
+  
+  add_generator("customer",customer, function() rexp(1,4/10))
+
+env%>%
+  run(until = 600)
+
+```
+
+```{r}
+p1<- plot(get_mon_resources(env),step = T)
+p2<- plot(get_mon_arrivals(env))
+
+grid.arrange(p1,p2,nrow =2)
+```
